@@ -1,0 +1,26 @@
+{
+  "name": "drumscore",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A free, local drum-learning app: import Guitar Pro files or write notation, play along at variable speed with the band synthesised underneath.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@coderline/alphatab": "1.8.3"
+  },
+  "devDependencies": {
+    "@coderline/alphatab-vite": "1.8.3",
+    "typescript": "^5.5.4",
+    "vite": "^7.3.3",
+    "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}
