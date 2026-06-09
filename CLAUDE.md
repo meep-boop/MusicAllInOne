@@ -229,9 +229,13 @@ colour map** (`src/core/colors.ts`) and a **Settings page**.
   between simultaneous hits, **limb-coloured** (heuristic, refined by Stage 3); a
   **beat-pulse hub**; articulation marks (open hi-hat, cross-stick, ride bell);
   and **osu-style approach rings** that shrink onto each piece, reaching it at
-  hit time. When an AI sticking exists, a **diagonal stick** overlays each struck
+  hit time. When a sticking exists, a **diagonal stick** overlays each struck
   drum (tip top-right = left hand, tip top-left = right hand), looked up by the
-  hit's `tick:piece`.
+  hit's `tick:piece`. A per-hand **ghost "ready" stick** (toggle) travels to and
+  hovers (half-visible) over each hand's *next* target from the sticking
+  schedule, so you see where each hand is heading (e.g. it parks on an upcoming
+  crash). It **hides while that hand is striking** (so the bright contact stick
+  never stacks on top of it); opacity + colour-by-hand are adjustable.
 - **Falling-notes highway** *(done)*: `src/ui/highway.ts`, a `<canvas>` with one
   lane per drum, notes falling to a hit line. Both the highway and the approach
   rings read a tick-keyed **timeline** (`src/core/timeline.ts`, from
@@ -247,9 +251,9 @@ colour map** (`src/core/colors.ts`) and a **Settings page**.
   look-ahead (beats). Purely visual for now; the same timeline + hit line feeds
   the Stage 5 mic follower.
 - **Visualisation settings** *(done)*: `src/core/viz.ts` (pub/sub) holds lit/hold
-  duration, show-kit, connecting-lines, limb-colours, approach-rings, show-highway,
-  highway height and look-ahead, plus the floating panel geometry — all in the
-  Settings panel, applied live.
+  duration, show-kit, connecting-lines, limb-colours, approach-rings, ghost
+  ready-sticks, show-highway, highway height and look-ahead, plus the floating
+  panel geometry — all in the Settings panel, applied live.
 
 ### Stage 2 — Notation editor (the 30%)
 
