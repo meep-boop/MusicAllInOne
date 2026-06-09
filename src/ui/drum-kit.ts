@@ -28,7 +28,7 @@ import {
 import {
   getViz, subscribeViz, setViz, saveKitGeometry, saveDockWidth, type VizSettings,
 } from '../core/viz';
-import { getSticking } from '../ai/sticking';
+import { getSticking, subscribeSticking, type Hand } from '../ai/sticking';
 import { Highway } from './highway';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -204,6 +204,38 @@ export function createDrumKit(engine: ScoreEngine): void {
   overlay.appendChild(openHatRing);
   overlay.appendChild(xstickRing);
 
+  // ghost "ready" sticks — one persistent stick per hand, hovering at that
+  // hand's next target and travelling between targets.
+  function makeGhost() {
+    const grp = svgEl('g', { class: 'ghost-stick' });
+    const line = svgEl('line', {});
+    const bead = svgEl('circle', { r: '3.2' });
+    grp.appendChild(line);
+    grp.appendChild(bead);
+    grp.style.opacity = '0';
+    overlay.appendChild(grp);
+    return { grp, line, bead };
+  }
+  const ghostR = makeGhost();
+  const ghostL = makeGhost();
+
+  // per-hand upcoming-hit schedules, rebuilt whenever the sticking changes
+  let schedR: { tick: number; piece: KitPiece }[] = [];
+  let schedL: { tick: number; piece: KitPiece }[] = [];
+  const ghostSuppress = { R: 0, L: 0 }; // wall-clock ms until which to hide each ghost
+  function rebuildSchedules(): void {
+    schedR = [];
+    schedL = [];
+    const st = getSticking();
+    if (!st) return;
+    for (const ev of timeline) {
+      const hand = st.hands.get(`${ev.tick}:${ev.piece}`);
+      if (hand === 'R') schedR.push({ tick: ev.tick, piece: ev.piece });
+      else if (hand === 'L') schedL.push({ tick: ev.tick, piece: ev.piece });
+    }
+  }
+  subscribeSticking(() => rebuildSchedules());
+
   // highway
   const canvas = card.querySelector('.kit-highway') as HTMLCanvasElement;
   const stage = card.querySelector('.kit-stage') as HTMLElement;
@@ -341,7 +373,12 @@ export function createDrumKit(engine: ScoreEngine): void {
       handleArticulation(hit.midi);
       if (sticking) {
         const hand = sticking.hands.get(`${hit.tick}:${piece}`);
-        if (hand) flashStick(piece, hand);
+        if (hand) {
+          flashStick(piece, hand);
+          // hide that hand's ghost while the bright contact stick is on screen,
+          // so you never see two sticks stacked on the same drum.
+          ghostSuppress[hand] = performance.now() + viz.flashMs + Math.max(500, viz.flashMs);
+        }
       }
     }
     if (viz.connectLines && piecesHit.size >= 2) {
@@ -378,7 +415,79 @@ export function createDrumKit(engine: ScoreEngine): void {
       ring.style.stroke = colourOf(piece);
     }
   }
-  const loop = () => { updateRings(); requestAnimationFrame(loop); };
+  // Where a hand's ghost should be at `now`: travels from its previous hit to
+  // its next target (ease-out), then hovers there until the strike.
+  function ghostPos(
+    sched: { tick: number; piece: KitPiece }[],
+    now: number,
+  ): { x: number; y: number } | null {
+    let lo = 0;
+    let hi = sched.length;
+    while (lo < hi) {
+      const m = (lo + hi) >> 1;
+      if (sched[m].tick < now) lo = m + 1;
+      else hi = m;
+    }
+    const nx = sched[lo];
+    if (!nx) return null;
+    const nxG = GEO[nx.piece];
+    const pv = lo > 0 ? sched[lo - 1] : null;
+    if (!pv) return { x: nxG.x, y: nxG.y };
+    const pvG = GEO[pv.piece];
+    const travel = Math.min((nx.tick - pv.tick) * 0.5, 480);
+    let p = travel > 0 ? (now - pv.tick) / travel : 1;
+    p = Math.max(0, Math.min(1, p));
+    p = 1 - (1 - p) * (1 - p); // ease-out
+    return { x: pvG.x + (nxG.x - pvG.x) * p, y: pvG.y + (nxG.y - pvG.y) * p };
+  }
+  function placeGhost(
+    g: { grp: SVGElement; line: SVGElement; bead: SVGElement },
+    x: number,
+    y: number,
+    hand: Hand,
+  ): void {
+    const d = 50 * 0.7071;
+    const ty = y - 6; // hover slightly above the head
+    const ax = hand === 'L' ? x - d : x + d;
+    g.line.setAttribute('x1', String(ax));
+    g.line.setAttribute('y1', String(ty + d));
+    g.line.setAttribute('x2', String(x));
+    g.line.setAttribute('y2', String(ty));
+    g.bead.setAttribute('cx', String(x));
+    g.bead.setAttribute('cy', String(ty));
+    const col = viz.ghostByHand ? LIMB_COLOURS[hand === 'R' ? 'RH' : 'LH'] : '#f2e4be';
+    g.line.style.stroke = col;
+    g.grp.style.opacity = String(viz.ghostOpacity);
+  }
+  function updateGhosts(now: number): void {
+    if (!viz.showKit || !viz.ghostSticks) {
+      ghostR.grp.style.opacity = '0';
+      ghostL.grp.style.opacity = '0';
+      return;
+    }
+    const w = performance.now();
+    if (w < ghostSuppress.R) {
+      ghostR.grp.style.opacity = '0';
+    } else {
+      const pr = ghostPos(schedR, now);
+      if (pr) placeGhost(ghostR, pr.x, pr.y, 'R');
+      else ghostR.grp.style.opacity = '0';
+    }
+    if (w < ghostSuppress.L) {
+      ghostL.grp.style.opacity = '0';
+    } else {
+      const pl = ghostPos(schedL, now);
+      if (pl) placeGhost(ghostL, pl.x, pl.y, 'L');
+      else ghostL.grp.style.opacity = '0';
+    }
+  }
+
+  const loop = () => {
+    const now = engine.currentTick;
+    updateRings();
+    updateGhosts(now);
+    requestAnimationFrame(loop);
+  };
   requestAnimationFrame(loop);
 
   // ----------------------------------------------------------- viz wiring

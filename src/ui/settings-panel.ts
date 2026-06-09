@@ -157,6 +157,19 @@ export function createSettingsPanel(engine: ScoreEngine): { open: () => void } {
           <input type="checkbox" class="opt-approach" ${viz.approachRings ? 'checked' : ''} />
           <span>Approach rings on the kit (osu-style)</span>
         </label>
+        <label class="settings-row">
+          <input type="checkbox" class="opt-ghost" ${viz.ghostSticks ? 'checked' : ''} />
+          <span>Ready-sticks — show where each hand is heading</span>
+        </label>
+        <label class="settings-row slider-row">
+          <span>Ready-stick opacity</span>
+          <input type="range" class="opt-ghostop" min="15" max="80" step="5" value="${Math.round(viz.ghostOpacity * 100)}" />
+          <span class="ghostop-val">${Math.round(viz.ghostOpacity * 100)}%</span>
+        </label>
+        <label class="settings-row">
+          <input type="checkbox" class="opt-ghosthand" ${viz.ghostByHand ? 'checked' : ''} />
+          <span>Colour ready-sticks by hand (R cyan / L orange)</span>
+        </label>
       </section>
 
       <section class="settings-section">
@@ -265,6 +278,17 @@ export function createSettingsPanel(engine: ScoreEngine): { open: () => void } {
     limbs.onchange = () => setViz({ limbColours: limbs.checked });
     const approach = body.querySelector('.opt-approach') as HTMLInputElement;
     approach.onchange = () => setViz({ approachRings: approach.checked });
+    const ghost = body.querySelector('.opt-ghost') as HTMLInputElement;
+    ghost.onchange = () => setViz({ ghostSticks: ghost.checked });
+    const ghostOp = body.querySelector('.opt-ghostop') as HTMLInputElement;
+    const ghostOpVal = body.querySelector('.ghostop-val') as HTMLElement;
+    ghostOp.oninput = () => {
+      const v = parseInt(ghostOp.value, 10);
+      ghostOpVal.textContent = `${v}%`;
+      setViz({ ghostOpacity: v / 100 });
+    };
+    const ghostHand = body.querySelector('.opt-ghosthand') as HTMLInputElement;
+    ghostHand.onchange = () => setViz({ ghostByHand: ghostHand.checked });
     const highway = body.querySelector('.opt-highway') as HTMLInputElement;
     highway.onchange = () => setViz({ showHighway: highway.checked });
     const hwHeight = body.querySelector('.opt-hwheight') as HTMLInputElement;

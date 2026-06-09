@@ -895,6 +895,20 @@ input[type="range"]::-webkit-slider-thumb {
   stroke: rgba(0, 0, 0, 0.7);
   stroke-width: 1;
 }
+.ghost-stick {
+  pointer-events: none;
+}
+.ghost-stick line {
+  stroke: #f2e4be;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.55));
+}
+.ghost-stick circle {
+  fill: #ffffff;
+  stroke: rgba(0, 0, 0, 0.45);
+  stroke-width: 1;
+}
 .artic {
   fill: none;
   stroke-width: 2.5;

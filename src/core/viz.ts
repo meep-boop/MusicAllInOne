@@ -24,6 +24,16 @@ export interface VizSettings {
   limbColours: boolean;
   /** osu-style rings that shrink onto each piece, reaching it at hit time. */
   approachRings: boolean;
+  /** Half-visible "ready" sticks that travel to each hand's next target. */
+  ghostSticks: boolean;
+  /** Opacity of the ready sticks (0..1). */
+  ghostOpacity: number;
+  /** Colour the ready sticks by hand (right cyan / left orange) vs neutral. */
+  ghostByHand: boolean;
+  /** Ghost sticks glide into their next target (vs snap/park). */
+  ghostGlide: boolean;
+  /** Contact (hit) sticks glide in from the hand's previous position. */
+  stickGlide: boolean;
   /** Show the falling-notes highway above the kit. */
   showHighway: boolean;
   /** Highway height in pixels. */
@@ -48,6 +58,9 @@ export const DEFAULT_VIZ: VizSettings = {
   connectLines: true,
   limbColours: true,
   approachRings: true,
+  ghostSticks: true,
+  ghostOpacity: 0.5,
+  ghostByHand: false,
   showHighway: true,
   highwayHeight: 240,
   lookaheadBeats: 8,
